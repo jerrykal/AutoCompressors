@@ -40,7 +40,7 @@ run_name="ac_${base_model}_${run_name_suffix}"
 
 echo "Run: ${run_name}"
 
-cache_dir=../CompressiveMemoryTransformer/.cache
+cache_dir=./.cache
 out_dir=checkpoints/$run_name
 mkdir -p $out_dir
 
@@ -52,7 +52,7 @@ header="torchrun \
 --nproc_per_node=$num_gpus \
 --rdzv-backend=c10d \
 --rdzv-endpoint=$node:5546 \
-train.py "
+train_icae.py"
 
 model_url="meta-llama/${base_model}"
 
@@ -88,10 +88,10 @@ arguments=(
     --randomize_substeps $randomize_substeps
     --segment_gradient_checkpointing $segment_gradient_checkpointing
     --bf16
-    --lora
-    --lora_r 16
-    --lora_alpha 16
-    --lora_dropout 0.05
+    # --lora
+    # --lora_r 16
+    # --lora_alpha 16
+    # --lora_dropout 0.05
     --lora_target_modules q_proj v_proj o_proj k_proj
     --use_fast_tokenizer false
     --lora_modules_to_save embed_summary
