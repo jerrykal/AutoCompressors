@@ -60,6 +60,7 @@ class SubstepTrainer(BaseTrainer):
         eval_dataset: Optional[Dataset] = None,
         tokenizer: Optional[PreTrainedTokenizerBase] = None,
         model_init: Callable[[], PreTrainedModel] = None,
+        compute_loss_func: Optional[Callable] = None,
         compute_metrics: Optional[Callable[[EvalPrediction], Dict]] = None,
         callbacks: Optional[List[TrainerCallback]] = None,
         optimizers: Tuple[torch.optim.Optimizer, torch.optim.lr_scheduler.LambdaLR] = (
@@ -78,6 +79,7 @@ class SubstepTrainer(BaseTrainer):
             eval_dataset,
             tokenizer,
             model_init,
+            compute_loss_func,
             compute_metrics,
             callbacks,
             optimizers,
@@ -197,8 +199,8 @@ class SubstepTrainer(BaseTrainer):
             # deepspeed handles loss scaling by gradient_accumulation_steps in its `backward`
             loss = loss / self.args.gradient_accumulation_steps
 
-        if self.do_grad_scaling:
-            self.scaler.scale(loss).backward()
+        # if self.do_grad_scaling:
+        #     self.scaler.scale(loss).backward()
 
         elif self.deepspeed:
             # loss gets scaled under gradient_accumulation_steps in deepspeed
@@ -209,7 +211,10 @@ class SubstepTrainer(BaseTrainer):
         return loss.detach(), softprompt
 
     def training_step(
-        self, model: nn.Module, inputs: Dict[str, Union[torch.Tensor, Any]]
+        self,
+        model: nn.Module,
+        inputs: Dict[str, Union[torch.Tensor, Any]],
+        num_items_in_batch,
     ) -> torch.Tensor:
         """One training step consists of many training_substeps.
 

@@ -8,7 +8,7 @@ from packaging import version
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 from transformers import Trainer
-from transformers.deepspeed import deepspeed_init
+from transformers.integrations.deepspeed import deepspeed_init
 from transformers.trainer_callback import (
     PrinterCallback,
     TrainerCallback,

@@ -5,10 +5,8 @@ from typing import Dict, List, Optional, Tuple, Union
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from transformers import OPTForCausalLM
+from transformers import LlamaForCausalLM, OPTForCausalLM
 from transformers.modeling_outputs import CausalLMOutputWithPast
-
-from modeling_flash_llama import LlamaForCausalLM
 
 logger = logging.getLogger(__name__)
 

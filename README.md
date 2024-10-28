@@ -46,8 +46,8 @@ Setup a new environment and install [pytorch](https://pytorch.org/) version 2.1.
 followed by these libraries
 ```bash
 pip install packaging
-pip install transformers==4.34.0 datasets==2.13.4 accelerate==0.24.1 sentencepiece==0.1.99 peft==0.5.0 'numpy<2' fsspec==2023.9.2 wandb tensorboard
-pip install flash-attn==2.3.5 --no-build-isolation
+pip install transformers==4.46.0 datasets==3.0.2 accelerate==1.0.1 sentencepiece==0.2.0 peft==0.13.2 tensorboard
+pip install flash-attn==1.0.0 --no-build-isolation
 ```
 Then clone this repo and navigate to the repository root to run scripts or import the libraries.
 
