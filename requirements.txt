@@ -1,0 +1,11 @@
+accelerate==0.24.1
+datasets==2.13.2
+flash-attn==2.3.5
+fsspec==2023.9.2
+numpy<2
+peft==0.5.0
+sentencepiece==0.1.99
+tensorboard
+torch==2.1.0
+transformers==4.34.0
+wandb

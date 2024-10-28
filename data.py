@@ -1,10 +1,11 @@
-import datasets
-import transformers
-import math
 import logging
-from transformers.testing_utils import CaptureLogger
+import math
 import os
 from itertools import chain
+
+import datasets
+import transformers
+from transformers.testing_utils import CaptureLogger
 
 logger = logging.getLogger(__name__)
 

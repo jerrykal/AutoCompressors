@@ -1,8 +1,8 @@
+from typing import Optional, Tuple
+
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
-from typing import Optional, Tuple
 
 def patch_opt_attn(attn):
     self = attn
@@ -22,8 +22,12 @@ def patch_opt_attn(attn):
         is_cross_attention = key_value_states is not None
 
         # assert self.is_decoder and not is_cross_attention, "Only decoder layers are implemented in fast_attention"
-        assert output_attentions is False, "output_attentions not implemented for fast_attention"
-        assert layer_head_mask is None, "layer_head_mask is not supported with fast_attention"
+        assert (
+            output_attentions is False
+        ), "output_attentions not implemented for fast_attention"
+        assert (
+            layer_head_mask is None
+        ), "layer_head_mask is not supported with fast_attention"
         # assert hidden_states.dtype in [torch.float16, torch.bfloat16], "Only float16 and bfloat16 are supported for fast_attention"
 
         bsz, tgt_len, _ = hidden_states.size()
@@ -45,8 +49,12 @@ def patch_opt_attn(attn):
             # reuse k, v, self_attention
             key_states = self._shape(self.k_proj(hidden_states), -1, bsz)
             value_states = self._shape(self.v_proj(hidden_states), -1, bsz)
-            key_states = torch.cat([past_key_value[0].to(key_states.dtype), key_states], dim=2)
-            value_states = torch.cat([past_key_value[1].to(value_states.dtype), value_states], dim=2)
+            key_states = torch.cat(
+                [past_key_value[0].to(key_states.dtype), key_states], dim=2
+            )
+            value_states = torch.cat(
+                [past_key_value[1].to(value_states.dtype), value_states], dim=2
+            )
         else:
             # self_attention
             key_states = self._shape(self.k_proj(hidden_states), -1, bsz)
@@ -62,7 +70,9 @@ def patch_opt_attn(attn):
 
         # Note that this does NOT support attention masks other than causal masking
         attn_output = F.scaled_dot_product_attention(
-            query_states, key_states, value_states,
+            query_states,
+            key_states,
+            value_states,
             is_causal=True,
             dropout_p=(self.dropout if self.training else 0.0),
         )

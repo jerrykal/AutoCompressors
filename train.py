@@ -2,9 +2,9 @@ import logging
 import math
 import os
 import sys
-import torch
 
 import datasets
+import torch
 import transformers
 from transformers import (
     CONFIG_MAPPING,
@@ -13,22 +13,22 @@ from transformers import (
     HfArgumentParser,
     set_seed,
 )
-
-from transformers.utils import check_min_version, send_example_telemetry
+from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
 
-from args import TrainingArguments, ModelArguments, DataTrainingArguments
+from args import DataTrainingArguments, ModelArguments, TrainingArguments
+from data import load_preprocessed_datasets, load_raw_dataset, preprocess_datasets
+from fast_attention import patch_opt
 from substep_trainer import SubstepTrainer
 from utils import get_last_checkpoint_or_last_model, parse_checkpoint_step
-
-from data import load_raw_dataset, preprocess_datasets, load_preprocessed_datasets
-
-from fast_attention import patch_opt
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
 check_min_version("4.22.0")
 
-require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/language-modeling/requirements.txt")
+require_version(
+    "datasets>=1.8.0",
+    "To fix: pip install -r examples/pytorch/language-modeling/requirements.txt",
+)
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +38,15 @@ def main():
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
 
-    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
+    parser = HfArgumentParser(
+        (ModelArguments, DataTrainingArguments, TrainingArguments)
+    )
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
         # let's parse it to get our arguments.
-        model_args, data_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
+        model_args, data_args, training_args = parser.parse_json_file(
+            json_file=os.path.abspath(sys.argv[1])
+        )
     else:
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
@@ -75,9 +79,13 @@ def main():
     }
 
     if model_args.tokenizer_name:
-        tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, **tokenizer_kwargs)
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_args.tokenizer_name, **tokenizer_kwargs
+        )
     elif model_args.model_name_or_path:
-        tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path, **tokenizer_kwargs)
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_args.model_name_or_path, **tokenizer_kwargs
+        )
     else:
         raise ValueError(
             "You are instantiating a new tokenizer from scratch. This is not supported by this script."
@@ -88,14 +96,19 @@ def main():
     if not training_args.do_train:
         data_args.preprocessed_train_datasets = []
 
-    if data_args.preprocessed_train_datasets + data_args.preprocessed_validation_datasets:
+    if (
+        data_args.preprocessed_train_datasets
+        + data_args.preprocessed_validation_datasets
+    ):
         print("train dataset", data_args.preprocessed_train_datasets)
         print("validation dataset", data_args.preprocessed_validation_datasets)
 
         lm_datasets = load_preprocessed_datasets(data_args, model_args)
     else:
         raw_datasets = load_raw_dataset(data_args, model_args)
-        lm_datasets = preprocess_datasets(raw_datasets, tokenizer, data_args, training_args)
+        lm_datasets = preprocess_datasets(
+            raw_datasets, tokenizer, data_args, training_args
+        )
 
     if training_args.do_train:
         if "train" not in lm_datasets:
@@ -112,22 +125,25 @@ def main():
         for key in lm_datasets.keys():
             if "validation" in key:
                 if data_args.max_eval_samples is not None:
-                    max_eval_samples = min(data_args.max_eval_samples, len(lm_datasets[key]))
+                    max_eval_samples = min(
+                        data_args.max_eval_samples, len(lm_datasets[key])
+                    )
                     eval_dataset[key] = lm_datasets[key].select(range(max_eval_samples))
                 else:
                     eval_dataset[key] = lm_datasets[key]
-
-
 
     # Detecting last checkpoint.
     last_checkpoint = None
     if training_args.resume_from_checkpoint:
         last_checkpoint = get_last_checkpoint_or_last_model(training_args.output_dir)
         if last_checkpoint is None:
-            print(f"Didn't find a checkpoint in {training_args.output_dir}. Starting training from scratch")
+            print(
+                f"Didn't find a checkpoint in {training_args.output_dir}. Starting training from scratch"
+            )
         else:
-            print(f"Found checkpoint {last_checkpoint}. Using this checkpoint to resume training.")
-
+            print(
+                f"Found checkpoint {last_checkpoint}. Using this checkpoint to resume training."
+            )
 
     # Set seed before initializing model.
     set_seed(training_args.seed)
@@ -139,7 +155,9 @@ def main():
     }
 
     if model_args.model_name_or_path:
-        config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs)
+        config = AutoConfig.from_pretrained(
+            model_args.model_name_or_path, **config_kwargs
+        )
     elif model_args.config_name:
         config = AutoConfig.from_pretrained(model_args.config_name, **config_kwargs)
     else:
@@ -159,12 +177,17 @@ def main():
     # Create model
     if "llama" in (model_args.model_name_or_path or model_args.config_name).lower():
         from auto_compressor import LlamaAutoCompressorModel
+
         AutoCompressorModel = LlamaAutoCompressorModel
     else:
         from auto_compressor import AutoCompressorModel
 
     if model_args.model_name_or_path:
-        half_dtype = (torch.bfloat16 if training_args.bf16 else (torch.float16 if training_args.fp16 else None))
+        half_dtype = (
+            torch.bfloat16
+            if training_args.bf16
+            else (torch.float16 if training_args.fp16 else None)
+        )
         model = AutoCompressorModel.from_pretrained(
             model_args.model_name_or_path,
             from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -172,12 +195,18 @@ def main():
             cache_dir=model_args.cache_dir,
             revision=model_args.model_revision,
             use_auth_token=True if model_args.use_auth_token else None,
-            torch_dtype=(half_dtype if model_args.lora or model_args.lora_path else None),
+            torch_dtype=(
+                half_dtype if model_args.lora or model_args.lora_path else None
+            ),
         )
     else:
         model = AutoCompressorModel.from_config(config)
-        n_params = sum(dict((p.data_ptr(), p.numel()) for p in model.parameters()).values())
-        logger.info(f"Training new model from scratch - Total size={n_params/2**20:.2f}M params")
+        n_params = sum(
+            dict((p.data_ptr(), p.numel()) for p in model.parameters()).values()
+        )
+        logger.info(
+            f"Training new model from scratch - Total size={n_params/2**20:.2f}M params"
+        )
 
     # Extend positional embeddings
     if training_args.max_position_embeddings is not None:
@@ -185,16 +214,17 @@ def main():
         max_pos = model.config.max_position_embeddings
         new_max_pos = training_args.max_position_embeddings
         multiply = math.ceil(new_max_pos / embed.num_embeddings)
-        embed.weight.data = torch.cat([
-            embed.weight[:-max_pos],
-            embed.weight[-max_pos:].repeat(multiply, 1)
-        ], dim=0)
+        embed.weight.data = torch.cat(
+            [embed.weight[:-max_pos], embed.weight[-max_pos:].repeat(multiply, 1)],
+            dim=0,
+        )
         embed.num_embeddings = embed.weight.size(0)
         model.config.max_position_embeddings = max_pos * multiply
         logger.info(f"Positional embeddings increased to {embed.num_embeddings}")
 
     if model_args.lora or model_args.lora_path:
-        from peft import PeftModel, get_peft_model, LoraConfig, TaskType
+        from peft import LoraConfig, PeftModel, TaskType, get_peft_model
+
         if model_args.lora_path:
             logger.info(f"Loading LoRA model from {model_args.lora_path}")
             model = PeftModel.from_pretrained(model, model_args.lora_path)
@@ -215,8 +245,6 @@ def main():
     if training_args.fast_attention:
         logger.info("Patching (experimental) fast attention")
         patch_opt(model)
-
-
 
     tokenizer.padding = True
     # Initialize our Trainer
@@ -241,7 +269,9 @@ def main():
         metrics = train_result.metrics
 
         max_train_samples = (
-            data_args.max_train_samples if data_args.max_train_samples is not None else len(train_dataset)
+            data_args.max_train_samples
+            if data_args.max_train_samples is not None
+            else len(train_dataset)
         )
         metrics["train_samples"] = min(max_train_samples, len(train_dataset))
 
@@ -266,8 +296,8 @@ def main():
         metrics["model_name"] = last_checkpoint
 
         if training_args.do_train:
-            trainer.log_metrics(f"eval")
-            trainer.save_metrics(f"eval")
+            trainer.log_metrics("eval")
+            trainer.save_metrics("eval")
         else:
             if last_checkpoint is not None:
                 step = parse_checkpoint_step(last_checkpoint)
@@ -281,4 +311,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
