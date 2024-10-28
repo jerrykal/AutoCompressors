@@ -228,7 +228,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
         return hidden_states
     final_shape = list(hidden_states.shape[:-2]) + [-1] + [hidden_states.shape[-1]]
     expand_shape = [-1] * (len(hidden_states.shape) - 1) + [n_rep] + [-1]
-    hidden_states = hidden_states.unsqueeze(-1).expand(expand_shape)
+    hidden_states = hidden_states.unsqueeze(-2).expand(expand_shape)
     return hidden_states.reshape(final_shape)
 
 
