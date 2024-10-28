@@ -49,9 +49,14 @@ class AutoCompressorMixin:
             )
 
             input_embeds = self.get_input_embeddings()
-            self.embed_summary.weight.data[:, :] = input_embeds.weight[
-                config.eos_token_id
-            ]
+
+            eos_token_id = (
+                self.config.eos_token_id[0]
+                if isinstance(self.config.eos_token_id, list)
+                else self.config.eos_token_id
+            )
+
+            self.embed_summary.weight.data[:, :] = input_embeds.weight[eos_token_id]
 
     def forward_segment(
         self,
