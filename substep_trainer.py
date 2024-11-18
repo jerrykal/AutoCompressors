@@ -40,9 +40,15 @@ class DataCollator:
             input_ids[i, : len(feature["input_ids"])] = torch.tensor(
                 feature["input_ids"], dtype=torch.long
             )
+
+            if "attention_mask" not in feature:
+                feature["attention_mask"] = [1] * len(feature["input_ids"])
             attention_mask[i, : len(feature["input_ids"])] = torch.tensor(
                 feature["attention_mask"], dtype=torch.long
             )
+
+            if feature["labels"] is None:
+                feature["labels"] = feature["input_ids"].copy()
             labels[i, : len(feature["input_ids"])] = torch.tensor(
                 feature["labels"], dtype=torch.long
             )
@@ -222,13 +228,16 @@ class SubstepTrainer(BaseTrainer):
         although substeps also implicitly accumulated gradient."""
 
         total_loss = 0
+        num_valid_losses = 0
         softprompt = None
         for substep in range(self.args.training_substeps):
             input_slice, segment_lengths = self.segment_input(inputs, substep)
             loss, softprompt = self.training_substep(
                 model, input_slice, softprompt, segment_lengths
             )
-            total_loss += loss
+            if not loss.isnan().any():
+                total_loss += loss
+                num_valid_losses += 1
             self.loss_log[f"substep_{substep}"] += loss
             self.substep_count += 1
 
@@ -248,7 +257,7 @@ class SubstepTrainer(BaseTrainer):
                     self.loss_log[f"substep_{i}"] = 0
                 self.log_count = 0
 
-        return total_loss / self.args.training_substeps
+        return total_loss / num_valid_losses
 
     def random_segment_lengths(self, input_ids, num_segments):
         """Returns a list of random segment lengths that sum up to num_segments"""

@@ -17,7 +17,7 @@ from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
 
 from args import DataTrainingArguments, ModelArguments, TrainingArguments
-from data import load_preprocessed_datasets, load_raw_dataset, preprocess_datasets
+from data import Data
 from fast_attention import patch_opt
 from substep_trainer import SubstepTrainer
 from utils import get_last_checkpoint_or_last_model, parse_checkpoint_step
@@ -92,45 +92,27 @@ def main():
             "You can do it from another script, save it, and load it from here, using --tokenizer_name."
         )
 
-    # load_datasets
-    if not training_args.do_train:
-        data_args.preprocessed_train_datasets = []
-
-    if (
-        data_args.preprocessed_train_datasets
-        + data_args.preprocessed_validation_datasets
-    ):
-        print("train dataset", data_args.preprocessed_train_datasets)
-        print("validation dataset", data_args.preprocessed_validation_datasets)
-
-        lm_datasets = load_preprocessed_datasets(data_args, model_args)
-    else:
-        raw_datasets = load_raw_dataset(data_args, model_args)
-        lm_datasets = preprocess_datasets(
-            raw_datasets, tokenizer, data_args, training_args
+    if training_args.do_train:
+        train_dataset = Data.prepare_train_data(
+            data_files=data_args.train_data,
+            tokenizer=tokenizer,
+            min_length=data_args.min_length,
+            max_length=data_args.max_length,
+            chat_template=data_args.chat_template,
+            seed=training_args.seed,
+            cache_dir=data_args.dataset_cache_dir,
         )
 
-    if training_args.do_train:
-        if "train" not in lm_datasets:
-            raise ValueError("--do_train requires a train dataset")
-        train_dataset = lm_datasets["train"]
-        if data_args.max_train_samples is not None:
-            max_train_samples = min(len(train_dataset), data_args.max_train_samples)
-            train_dataset = train_dataset.select(range(max_train_samples))
-        print(f"Total number of training data: {len(train_dataset)}")
-
     if training_args.do_eval:
-        # max eval sample deleted
-        eval_dataset = {}
-        for key in lm_datasets.keys():
-            if "validation" in key:
-                if data_args.max_eval_samples is not None:
-                    max_eval_samples = min(
-                        data_args.max_eval_samples, len(lm_datasets[key])
-                    )
-                    eval_dataset[key] = lm_datasets[key].select(range(max_eval_samples))
-                else:
-                    eval_dataset[key] = lm_datasets[key]
+        eval_dataset = Data.prepare_train_data(
+            data_files=data_args.eval_data,
+            tokenizer=tokenizer,
+            min_length=data_args.min_length,
+            max_length=data_args.max_length,
+            chat_template=data_args.chat_template,
+            seed=training_args.seed,
+            cache_dir=data_args.dataset_cache_dir,
+        )
 
     # Detecting last checkpoint.
     last_checkpoint = None

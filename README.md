@@ -47,7 +47,8 @@ followed by these libraries
 ```bash
 pip install packaging
 pip install transformers==4.46.0 datasets==3.0.2 accelerate==1.0.1 sentencepiece==0.2.0 peft==0.13.2 tensorboard
-pip install flash-attn==1.0.0 --no-build-isolation
+pip install flash-attn==2.6.3 --no-build-isolation
+pip install git+https://github.com/lm-sys/FastChat.git
 ```
 Then clone this repo and navigate to the repository root to run scripts or import the libraries.
 

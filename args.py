@@ -228,6 +228,27 @@ class DataTrainingArguments:
         default=False, metadata={"help": "Whether to add special tokens."}
     )
 
+    chat_template: str = field(
+        default="llama-3", metadata={"help": "Instruction template name in fastchat."}
+    )
+    train_data: list[str] | None = field(
+        default=None, metadata={"help": "Path to the training dataset."}
+    )
+    eval_data: list[str] | None = field(
+        default=None, metadata={"help": "Path to the evaluation dataset."}
+    )
+    dataset_cache_dir: str | None = field(
+        default=None, metadata={"help": "The cache directory for the dataset."}
+    )
+    min_length: int = field(
+        default=0,
+        metadata={"help": "The minimum length of the input sequence."},
+    )
+    max_length: int = field(
+        default=4096,
+        metadata={"help": "The maximum length of the input sequence."},
+    )
+
     def __post_init__(self):
         # if self.dataset_name is None and self.train_file is None and self.validation_file is None:
         # raise ValueError("Need either a dataset name or a training/validation file.")

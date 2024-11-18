@@ -7,4 +7,4 @@ preprocessed_*
 new_preprocessed_*
 .bash_aliases
 checkpoints
-data/redpajama_1b_llama2
+data
