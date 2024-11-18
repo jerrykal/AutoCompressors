@@ -3,9 +3,10 @@ import os
 import random
 import re
 from functools import partial
-from typing import Mapping
+from typing import Any, Mapping
 
 import datasets
+import torch
 
 from chat_utils import apply_chat_template
 
@@ -295,3 +296,53 @@ class Data:
             dataset = dataset.remove_columns(["length"])
 
         return dataset
+
+
+class DataCollatorWithDynamicPadding:
+    def __init__(self, pad_token_id: int, padding_side: str) -> None:
+        self.pad_token_id = pad_token_id
+        self.padding_side = padding_side
+        self.keys_to_tensorize = {
+            "input_ids",
+            "attention_mask",
+            "labels",
+            "position_ids",
+            "token_type_ids",
+            "length",
+            "depth",
+            "index",
+        }
+
+    def __call__(self, examples: list[dict[str, Any]]) -> dict[str, list[int]]:
+        first_example = examples[0]
+        return_batch = {}
+
+        for key in first_example.keys():
+            if "attention_mask" in key:
+                pad_token_id = 0
+            elif "label" in key:
+                pad_token_id = -100
+            else:
+                pad_token_id = self.pad_token_id
+
+            batch_values = [example[key] for example in examples]
+            if isinstance(batch_values[0], list):
+                return_batch[key] = self.add_padding(batch_values, pad_token_id)
+            else:
+                return_batch[key] = batch_values
+
+            if key in self.keys_to_tensorize:
+                return_batch[key] = torch.tensor(return_batch[key])
+
+        return return_batch
+
+    def add_padding(
+        self,
+        sequences: list[torch.LongTensor],
+        fill_value: int,
+    ) -> list:
+        max_len = max([len(seq) for seq in sequences])
+        if self.padding_side == "right":
+            return [seq + [fill_value] * (max_len - len(seq)) for seq in sequences]
+        else:
+            return [[fill_value] * (max_len - len(seq)) + seq for seq in sequences]

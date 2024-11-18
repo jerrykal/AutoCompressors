@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from transformers import LlamaForCausalLM, OPTForCausalLM
+from transformers import DynamicCache, LlamaForCausalLM, OPTForCausalLM
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
 logger = logging.getLogger(__name__)
@@ -180,7 +180,14 @@ class AutoCompressorMixin:
         segment_lengths: Optional[Union[List[int], int]] = None,
         softprompt: Optional[torch.FloatTensor] = None,
         output_softprompt: Optional[bool] = None,
+        **kwargs,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
+        if (
+            isinstance(past_key_values, DynamicCache)
+            and past_key_values.get_seq_length() == 0
+        ):
+            past_key_values = None
+
         # We formulate the past_key_values as a tuple where the second entry is the softprompt already in the past key values
         if past_key_values is not None and isinstance(past_key_values, dict):
             # Replace softprompt in direct argument with the softprompt in past_key_values
