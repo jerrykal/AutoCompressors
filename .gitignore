@@ -8,3 +8,4 @@ new_preprocessed_*
 .bash_aliases
 checkpoints
 data
+outputs

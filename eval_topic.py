@@ -31,7 +31,7 @@ class EvalArgs(TrainingArguments):
         default="first", metadata={"help": "Which topic to evaluate?"}
     )
     segment_length: int = field(
-        default=512,
+        default=1024,
         metadata={"help": "The length of each segment to compress."},
     )
 
