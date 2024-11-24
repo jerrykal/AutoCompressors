@@ -174,6 +174,7 @@ def main():
             raw_tokens = x["input_ids"][:, num_segments * eval_args.segment_length :]
             summary_vectors = model(
                 tokens_to_compress,
+                output_softprompt=True,
                 segment_lengths=[eval_args.segment_length] * num_segments,
             ).softprompt
 
