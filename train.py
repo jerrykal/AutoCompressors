@@ -101,6 +101,7 @@ def main():
             chat_template=data_args.chat_template,
             seed=training_args.seed,
             cache_dir=data_args.dataset_cache_dir,
+            load_from_cache_file=True,
         )
 
     if training_args.do_eval:
@@ -112,6 +113,7 @@ def main():
             chat_template=data_args.chat_template,
             seed=training_args.seed,
             cache_dir=data_args.dataset_cache_dir,
+            load_from_cache_file=True,
         )
 
     # Detecting last checkpoint.

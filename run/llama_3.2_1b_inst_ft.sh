@@ -64,6 +64,7 @@ arguments=(
     --do_train
     --logging_steps 1
     --save_steps $save_steps
+    --save_total_limit 1
     --preprocessing_num_workers 6
     --dataloader_num_workers 6
     --cache_dir $cache_dir
@@ -89,15 +90,15 @@ arguments=(
 )
 
 echo "Instruction Finetuning"
-arguments+=(\
---min_length 2048 \
---max_length 20480 \
---train_data ../data/long-llm/gpt/one_detail_book.train.16K.json \
-             ../data/long-llm/gpt/one_detail_paper.train.16K.json \
-             ../data/long-llm/longalpaca/train.json \
-             ../data/long-llm/booksum/train.16K.json \
-             ../data/long-llm/needle/train.16K.json  \
-             ../data/pretrain/llama3.2-8K_2B[5000] \
+arguments+=(
+    --min_length 2048
+    --max_length 20480
+    --train_data ../data/long-llm/gpt/one_detail_book.train.16K.json \
+                 ../data/long-llm/gpt/one_detail_paper.train.16K.json \
+                 ../data/long-llm/longalpaca/train.json \
+                 ../data/long-llm/booksum/train.16K.json \
+                 ../data/long-llm/needle/train.16K.json \
+                 ../data/pretrain/llama3.2-8K_2B[5000]
 )
 
 #################
